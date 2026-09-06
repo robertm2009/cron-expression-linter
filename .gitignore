@@ -1,0 +1,7 @@
+/cronlint
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+.DS_Store
