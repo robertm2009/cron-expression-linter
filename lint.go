@@ -115,6 +115,37 @@ func isEnvAssignment(trimmed string) bool {
 	return true
 }
 
+// specialSchedules are the vixie-cron @-shorthands that stand in for the
+// five time fields entirely. They are matched exactly as written here;
+// real cron does not case-fold them, so neither do we.
+var specialSchedules = map[string]bool{
+	"@reboot":   true,
+	"@yearly":   true,
+	"@annually": true,
+	"@monthly":  true,
+	"@weekly":   true,
+	"@daily":    true,
+	"@midnight": true,
+	"@hourly":   true,
+}
+
+// lintSpecialSchedule handles a line whose first token starts with '@',
+// which replaces the five time fields rather than being one of them.
+func lintSpecialSchedule(toks []token, lineNo int) []Finding {
+	tok := toks[0]
+	endCol := tok.col + len([]rune(tok.text))
+	if !specialSchedules[tok.text] {
+		return []Finding{errf(lineNo, tok.col, endCol,
+			"unrecognized schedule shorthand %q (expected one of @reboot, @yearly, @annually, @monthly, @weekly, @daily, @midnight, @hourly)",
+			tok.text)}
+	}
+	if len(toks) < 2 {
+		return []Finding{errf(lineNo, endCol, endCol+1,
+			"missing command after %s", tok.text)}
+	}
+	return nil
+}
+
 // LintLine checks a single line of a crontab file and returns any findings.
 // lineNo is 1-based to match how editors and compilers report locations.
 func LintLine(line string, lineNo int) []Finding {
@@ -125,6 +156,9 @@ func LintLine(line string, lineNo int) []Finding {
 	}
 
 	toks := tokenize(line)
+	if strings.HasPrefix(toks[0].text, "@") {
+		return lintSpecialSchedule(toks, lineNo)
+	}
 	if len(toks) < 5 {
 		last := toks[len(toks)-1]
 		endCol := last.col + len([]rune(last.text))
