@@ -171,7 +171,24 @@ func LintLine(line string, lineNo int) []Finding {
 	for i, spec := range scheduleFields {
 		findings = append(findings, validateField(toks[i], spec, lineNo)...)
 	}
+	findings = append(findings, checkRestrictedDayFields(toks[2], toks[4], lineNo)...)
 	return findings
+}
+
+// checkRestrictedDayFields warns about the classic cron gotcha: when both
+// day-of-month and day-of-week are restricted (anything other than "*"),
+// vixie-cron and most of its descendants OR the two fields together instead
+// of ANDing them, so the job runs on a match against either one. Someone
+// expecting "the 15th, but only if it's a Monday" instead gets "the 15th, or
+// any Monday".
+func checkRestrictedDayFields(dom, dow token, lineNo int) []Finding {
+	if dom.text == "*" || dow.text == "*" {
+		return nil
+	}
+	endCol := dom.col + len([]rune(dom.text))
+	return []Finding{warnf(lineNo, dom.col, endCol,
+		"day-of-month (%q) and day-of-week (%q) are both restricted; most cron implementations OR these fields together, so the job runs when either matches rather than only when both do",
+		dom.text, dow.text)}
 }
 
 type part struct {

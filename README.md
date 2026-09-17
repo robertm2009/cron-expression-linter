@@ -82,6 +82,12 @@ day-of-week), on every comma-separated item:
   match once.
 - A schedule line must have at least the 5 fields before its command.
 
+If both day-of-month and day-of-week are restricted (neither is `*`), that's
+flagged as a warning. Most cron implementations OR the two fields together
+rather than ANDing them, so `0 9 15 * mon` runs on the 15th of every month
+*and* every Monday, not just a Monday the 15th - a frequent source of
+schedules that fire more often than intended.
+
 A line can also start with one of the vixie-cron shorthands -
 `@reboot`, `@yearly`, `@annually`, `@monthly`, `@weekly`, `@daily`,
 `@midnight`, `@hourly` - in place of the five time fields. These are
@@ -92,9 +98,6 @@ command after it is reported as an error.
 ## Not yet supported
 
 - Non-standard extensions like `L`, `W`, or `#` in day fields (Quartz-style).
-- Cross-field checks, such as day-of-month and day-of-week both being
-  restricted (most cron implementations OR these together, which is a
-  common source of confusion).
 
 ## License
 
