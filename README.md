@@ -29,7 +29,14 @@ go build -o cronlint .
 cronlint crontab.txt
 cronlint file1 file2 file3
 cat crontab.txt | cronlint -
+cronlint --json crontab.txt
 ```
+
+With `--json`, nothing is printed in the compiler style; instead stdout gets
+one JSON array covering every input file (`[]` when there are no findings).
+Each element has `file`, `line`, `column`, `end_column` (exclusive),
+`severity` (`error` or `warning`) and `message`. Columns are 1-based and
+count characters, not bytes. Exit status is the same as in text mode.
 
 Exit status is `0` if no errors were found, `1` if any line has an error
 (warnings alone do not affect the exit status), and `2` on a usage or I/O
